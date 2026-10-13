@@ -1,6 +1,6 @@
 # Ativar seu CRM na Vercel
 
-Você pode usar a instalação da Ruptura quando o administrador a ativar, ou criar a sua própria cópia.
+Este guia prepara sua própria instalação, independente do CRM privado do estúdio Bench Park.
 
 ## 1. Criar o banco
 
@@ -8,11 +8,11 @@ Você pode usar a instalação da Ruptura quando o administrador a ativar, ou cr
 2. Abra **SQL Editor** e execute o conteúdo completo de [001_crm.sql](../supabase/migrations/001_crm.sql) uma única vez.
 3. Em **Authentication > Providers**, mantenha Email habilitado e **Confirm email** ligado. Configure senha mínima de 10 caracteres.
 4. Em **Authentication > URL Configuration**, informe o endereço final da instalação como **Site URL** e adicione `https://seu-crm.vercel.app/**` aos redirects permitidos. Para desenvolvimento, adicione `http://localhost:3000/**`.
-5. Configure um SMTP próprio para confirmação/recuperação de senha antes de distribuir aos alunos. O serviço de e-mail de testes do Supabase tem restrições; confira as configurações e os limites na sua conta.
+5. Configure um SMTP próprio para confirmação/recuperação de senha para os usuários da sua instalação. O serviço de e-mail de testes do Supabase tem restrições; confira as configurações e os limites na sua conta.
 
 ## 2. Conectar na Vercel
 
-Faça um fork deste repositório no GitHub e importe na Vercel como projeto **Next.js**, diretório raiz padrão. Ou configure o projeto existente `crm-ruptura` na equipe BENCH.
+Faça um fork deste repositório no GitHub e importe na Vercel como projeto **Next.js**, diretório raiz padrão.
 
 Em **Settings > Environment Variables**, preencha em Production:
 

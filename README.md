@@ -2,7 +2,7 @@
 
 Uma base para estúdios criativos e alunos da Ruptura: clientes, pipeline, propostas, projetos, financeiro, rotina e prospecção.
 
-**Endereço da instalação da Ruptura:** https://crm-ruptura.vercel.app  
+**Para alunos:** instale sua própria cópia seguindo o [guia de instalação](docs/INSTALACAO.md). O CRM do estúdio Bench Park é uma instalação privada.  
 **Código público:** https://github.com/felipeferreira3d/crm-ruptura
 
 ## Antes de usar

@@ -7,7 +7,7 @@ A integração usa OAuth individual. O administrador configura o aplicativo uma 
 1. No Google Cloud Console, crie/seleccione um projeto e ative a **Google Calendar API**.
 2. Configure a tela de consentimento OAuth com o nome Ruptura CRM, e-mail de suporte, domínio e URL de privacidade da sua instalação (`https://seu-crm.vercel.app/privacidade`).
 3. Crie uma credencial OAuth do tipo **Web application**.
-4. Autorize o redirect exato: `https://seu-crm.vercel.app/api/google/callback`. Para a instalação Ruptura: `https://crm-ruptura.vercel.app/api/google/callback`.
+4. Autorize o redirect exato: `https://seu-crm.vercel.app/api/google/callback`. Use sempre o domínio da sua própria instalação.
 5. Configure na Vercel: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `APP_URL` e `TOKEN_ENCRYPTION_KEY`.
 6. Gere a chave de criptografia com `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`. Guarde a chave somente no gerenciador de variáveis/segredos da hospedagem.
 7. Faça Redeploy. Em modo de teste no Google, adicione as contas de teste autorizadas. Antes de distribuir amplamente, conclua os requisitos de publicação/verificação indicados no console. Tokens em modo de teste podem expirar; confirme as regras atuais do Google.

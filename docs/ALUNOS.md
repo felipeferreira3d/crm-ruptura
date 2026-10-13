@@ -2,10 +2,7 @@
 
 **Utilize o seu próprio CRM. Pegue a base pronta aqui no portal Ruptura.**
 
-Você tem dois caminhos:
-
-1. **Usar a instalação da Ruptura:** abra https://crm-ruptura.vercel.app e crie sua conta quando o administrador concluir a ativação. Confirme seu e-mail e dê um nome ao seu estúdio.
-2. **Ter sua cópia:** faça um fork de https://github.com/felipeferreira3d/crm-ruptura e siga o [guia de instalação](INSTALACAO.md) para conectar seu Supabase e publicar na sua Vercel.
+Cada aluno usa uma instalação própria, com banco, login e dados independentes. Faça um fork de https://github.com/felipeferreira3d/crm-ruptura e siga o [guia de instalação](INSTALACAO.md) para conectar seu Supabase e publicar na sua Vercel.
 
 Comece cadastrando um cliente e uma oportunidade. Depois organize projetos, prazos, propostas e recebimentos. Os dados começam vazios, para você preencher do seu jeito.
 
