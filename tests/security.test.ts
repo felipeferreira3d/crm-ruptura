@@ -1,0 +1,43 @@
+import {test} from "node:test";
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+import {PGlite} from "@electric-sql/pglite";
+import {fresh,recordSchema} from "../lib/crm";
+import {encrypt,decrypt} from "../lib/token-crypto";
+test("tokens: authenticated encryption rejects tampering",()=>{process.env.TOKEN_ENCRYPTION_KEY=Buffer.alloc(32,8).toString("base64");const value=encrypt({refresh_token:"test-only"});assert.equal(decrypt(value).refresh_token,"test-only");const parts=value.split(".");parts[2]=Buffer.from("changed").toString("base64url");assert.throws(()=>decrypt(parts.join(".")))});
+test("Postgres: tenant isolation, races, invitations, revocation and proposal snapshots",async()=>{
+const db=new PGlite();
+try{
+await db.exec("create schema auth;create table auth.users(id uuid primary key);create role anon;create role authenticated;create role service_role bypassrls;");
+await db.exec(readFileSync("supabase/migrations/001_crm.sql","utf8"));
+const owner=crypto.randomUUID(),other=crypto.randomUUID(),member=crypto.randomUUID();
+await db.query("insert into auth.users values ($1),($2),($3)",[owner,other,member]);
+await db.exec("set role service_role");
+const call=async(name:string,args:unknown[])=>{const r=await db.query<any>("select "+name+"("+args.map((_,i)=>"$"+(i+1)).join(",")+") as value",args);return r.rows[0].value};
+const a=await call("crm_create_workspace",[owner,"owner@example.test","Studio A"]),b=await call("crm_create_workspace",[other,"other@example.test","Studio B"]);
+const client={...fresh("clients"),name:"Private client"};
+const saved=await call("crm_save_record",[a,owner,client]);assert.equal(saved.version,1);
+await assert.rejects(call("crm_save_record",[a,other,{...fresh("clients")}]),/Acesso/);
+await assert.rejects(call("crm_save_record",[a,owner,client]),/duplicado/);
+await assert.rejects(call("crm_save_record",[b,other,{...fresh("projects"),clientId:client.id}]),/Vínculo/);
+const races=await Promise.allSettled([call("crm_save_record",[a,owner,{...saved,name:"edit1"}]),call("crm_save_record",[a,owner,{...saved,name:"edit2"}])]);assert.equal(races.filter(r=>r.status==="fulfilled").length,1);
+const proposal={...fresh("proposals"),clientId:client.id,clientSnapshot:"Private client",scope:"Design",paymentTerms:"50/50",validUntil:"2027-01-01",lines:[{id:crypto.randomUUID(),description:"Design",quantity:1,unitPrice:100}],status:"Enviada"};
+const sent=await call("crm_save_record",[a,owner,proposal]);await assert.rejects(call("crm_save_record",[a,owner,{...sent,scope:"changed"}]),/Nova revisão/);
+const hash="testhash";await db.query("insert into crm_invites(workspace_id,email,token_hash,expires_at) values($1,$2,$3,now()+interval '1 day')",[a,"member@example.test",hash]);
+await assert.rejects(call("crm_accept_invite",[hash,other,"other@example.test"]),/Convite/);
+assert.equal(await call("crm_accept_invite",[hash,member,"member@example.test"]),a);
+await assert.rejects(call("crm_accept_invite",[hash,member,"member@example.test"]),/Convite/);
+await call("crm_save_record",[a,member,{...fresh("tasks"),date:"2027-01-01"}]);
+await assert.rejects(call("crm_remove_member",[a,member,owner]),/autorizada/);
+await call("crm_remove_member",[a,owner,member]);
+await assert.rejects(call("crm_save_record",[a,member,{...fresh("tasks"),date:"2027-01-01"}]),/revogado/);
+const prospect={...fresh("prospects"),username:"testprofile",followers:300000};const profile=await call("crm_save_record",[a,owner,prospect]);const lead=fresh("leads");
+const one=await call("crm_convert_prospect",[a,owner,profile.id,profile.version,lead]);const two=await call("crm_convert_prospect",[a,owner,profile.id,profile.version,lead]);assert.equal(one.existing,false);assert.equal(two.existing,true);assert.equal(two.items[1].id,lead.id);
+const edited=await call("crm_save_record",[a,owner,{...one.items[0],prospectLeadId:""}]);assert.equal(edited.prospectLeadId,lead.id);
+await db.exec("reset role;set role authenticated");
+await assert.rejects(db.query("select * from crm_records"),/permission denied/);
+await assert.rejects(call("crm_save_record",[a,owner,fresh("clients")]),/permission denied/);
+await db.exec("reset role;set role anon");await assert.rejects(db.query("select * from crm_google"),/permission denied/);
+}finally{await db.close()}
+});
+test("profile threshold and invalid dates",()=>{assert.equal(recordSchema.safeParse({...fresh("prospects"),followers:200000}).success,false);assert.equal(recordSchema.safeParse({...fresh("tasks"),date:"2026-02-31"}).success,false)});

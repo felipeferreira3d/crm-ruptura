@@ -1,0 +1,8 @@
+import "server-only";
+import {admin,appUrl,HttpError} from "./server";
+import {encrypt,decrypt} from "./token-crypto";
+export const googleConfigured=()=>!!(process.env.GOOGLE_CLIENT_ID&&process.env.GOOGLE_CLIENT_SECRET&&process.env.TOKEN_ENCRYPTION_KEY&&process.env.APP_URL);
+export const redirectUri=()=>appUrl()+"/api/google/callback";
+export async function tokenRequest(fields:Record<string,string>){const r=await fetch("https://oauth2.googleapis.com/token",{method:"POST",body:new URLSearchParams({...fields,client_id:process.env.GOOGLE_CLIENT_ID!,client_secret:process.env.GOOGLE_CLIENT_SECRET!}),signal:AbortSignal.timeout(15000)});if(!r.ok)throw new HttpError(409,"Reconecte sua conta Google em Conta e equipe.");return r.json()}
+export async function googleRequest(token:string,path:string,init:RequestInit={}){return fetch("https://www.googleapis.com/calendar/v3/"+path,{...init,headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},signal:AbortSignal.timeout(15000)})}
+export async function connection(userId:string){const db=admin();const {data,error}=await db.from("crm_google").select("*").eq("user_id",userId).maybeSingle();if(error)throw error;if(!data)throw new HttpError(409,"Conecte sua agenda em Conta e equipe.");let credentials=decrypt(data.credentials);if(credentials.expires_at<Date.now()+60000){const result=await tokenRequest({grant_type:"refresh_token",refresh_token:credentials.refresh_token});credentials={...credentials,access_token:result.access_token,expires_at:Date.now()+result.expires_in*1000};const update=await db.from("crm_google").update({credentials:encrypt(credentials),updated_at:new Date().toISOString()}).eq("user_id",userId);if(update.error)throw update.error;}return {...data,credentials}}
